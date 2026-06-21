@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMediaFiles, getSignedUrl } from "@/lib/storage";
-import archiver from "archiver";
+const archiver = require("archiver");
 
 export async function GET(request: NextRequest) {
   try {
