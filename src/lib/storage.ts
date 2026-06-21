@@ -1,4 +1,4 @@
-import { createClient } from "./supabase/server";
+import { createClient, createServiceClient } from "./supabase/server";
 import { requireAuth } from "./auth.server";
 
 const BUCKET_NAME = "wedding-media";
@@ -19,13 +19,14 @@ export async function uploadFile(
 ): Promise<MediaFile | null> {
   const session = await requireAuth();
   const supabase = await createClient();
+  const serviceSupabase = createServiceClient();
 
   const fileExt = file.name.split(".").pop();
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
   const filePath = `${mediaType}s/${fileName}`;
 
-  // Upload to Supabase Storage
-  const { data: uploadData, error: uploadError } = await supabase.storage
+  // Upload to Supabase Storage using service role to bypass RLS
+  const { data: uploadData, error: uploadError } = await serviceSupabase.storage
     .from(BUCKET_NAME)
     .upload(filePath, file);
 
@@ -50,8 +51,8 @@ export async function uploadFile(
 
   if (dbError) {
     console.error("Database error:", dbError);
-    // Clean up the uploaded file
-    await supabase.storage.from(BUCKET_NAME).remove([filePath]);
+    // Clean up the uploaded file using service role
+    await serviceSupabase.storage.from(BUCKET_NAME).remove([filePath]);
     return null;
   }
 
