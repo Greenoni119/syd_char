@@ -8,9 +8,9 @@ import {
 export default async function InvitePage({
   params,
 }: {
-  params: { token: string };
+  params: Promise<{ token: string }>;
 }) {
-  const token = params.token;
+  const { token } = await params;
 
   // Validate the invite token
   const inviteToken = await validateInviteToken(token);
