@@ -1,21 +1,45 @@
-import { redirect } from "next/navigation";
-import {
-  validateInviteToken,
-  createGuestSession,
-  setSessionCookie,
-} from "@/lib/auth.server";
+"use client";
 
-export default async function InvitePage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
-  const { token } = await params;
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { acceptInvite } from "@/app/actions";
 
-  // Validate the invite token
-  const inviteToken = await validateInviteToken(token);
+export default function InvitePage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!inviteToken) {
+  useEffect(() => {
+    const token = searchParams.get("token");
+    if (!token) {
+      setError("Invalid invitation link");
+      setLoading(false);
+      return;
+    }
+
+    acceptInvite(token).then((result) => {
+      if (result.error) {
+        setError(result.error);
+        setLoading(false);
+      } else {
+        router.push("/gallery");
+      }
+    });
+  }, [searchParams, router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50">
+        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Accepting invitation...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md text-center">
@@ -31,25 +55,5 @@ export default async function InvitePage({
     );
   }
 
-  // Create a guest session
-  const session = await createGuestSession(inviteToken.id);
-
-  if (!session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50">
-        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Error</h1>
-          <p className="text-gray-600 mb-6">
-            Something went wrong. Please try scanning the QR code again.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Set the session cookie
-  await setSessionCookie(session.id);
-
-  // Redirect to gallery
-  redirect("/gallery");
+  return null;
 }
