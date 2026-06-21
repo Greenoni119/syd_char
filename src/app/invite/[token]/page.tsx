@@ -1,32 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { acceptInvite } from "@/app/actions";
 
-export default function InvitePage() {
+export default function InvitePage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = searchParams.get("token");
-    if (!token) {
-      setError("Invalid invitation link");
-      setLoading(false);
-      return;
-    }
-
-    acceptInvite(token).then((result) => {
-      if (result.error) {
-        setError(result.error);
+    const loadToken = async () => {
+      const { token } = await params;
+      if (!token) {
+        setError("Invalid invitation link");
         setLoading(false);
-      } else {
-        router.push("/gallery");
+        return;
       }
-    });
-  }, [searchParams, router]);
+
+      acceptInvite(token).then((result) => {
+        if (result.error) {
+          setError(result.error);
+          setLoading(false);
+        } else {
+          router.push("/gallery");
+        }
+      });
+    };
+
+    loadToken();
+  }, [params, router]);
 
   if (loading) {
     return (
