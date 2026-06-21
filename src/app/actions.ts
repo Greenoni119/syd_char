@@ -8,22 +8,34 @@ import {
 } from "@/lib/auth.server";
 
 export async function acceptInvite(token: string) {
-  // Validate the invite token
-  const inviteToken = await validateInviteToken(token);
+  try {
+    console.log("Accepting invite with token:", token);
 
-  if (!inviteToken) {
-    return { error: "Invalid invitation" };
+    // Validate the invite token
+    const inviteToken = await validateInviteToken(token);
+    console.log("Invite token validation result:", inviteToken);
+
+    if (!inviteToken) {
+      console.log("Token validation failed");
+      return { error: "Invalid invitation" };
+    }
+
+    // Create a guest session
+    const session = await createGuestSession(inviteToken.id);
+    console.log("Session creation result:", session);
+
+    if (!session) {
+      console.log("Session creation failed");
+      return { error: "Failed to create session" };
+    }
+
+    // Set the session cookie
+    await setSessionCookie(session.id);
+    console.log("Session cookie set successfully");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error in acceptInvite:", error);
+    return { error: "An error occurred" };
   }
-
-  // Create a guest session
-  const session = await createGuestSession(inviteToken.id);
-
-  if (!session) {
-    return { error: "Failed to create session" };
-  }
-
-  // Set the session cookie
-  await setSessionCookie(session.id);
-
-  return { success: true };
 }
